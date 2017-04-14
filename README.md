@@ -47,10 +47,10 @@ Train a model with word embeddings (WE-CONV-SEG):
 
 	./train_cws_wemb.sh WHICH_DATASET WHICH_GPU
 	
-We have two optional datasets: `pku` and `msr`. If you run the program in CPU environment, just leave the second argment empty.
+We have two optional datasets: `pku` and `msr`. If you run the program in CPU environment, just leave the second argument empty.
 
 For example, if you want to train the model CONV-SEG on the pku dataset and on gpu0, you should run:
 
 	./train_cws.sh pku 0
 	
-More parameters can be set in `train_cws.py`.
+More arguments can be set in `train_cws.py`.
