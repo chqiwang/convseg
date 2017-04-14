@@ -1,6 +1,8 @@
 # CONV-SEG
 Convolutional neural network for Chinese word segmentation (CWS).
 
+The original paper *Convolutional Neural Network with Word Embeddings for Chinese Word Segmentation* is still under reviewing by EMNLP2017.
+
 ## Dependencies
 * Python 2.7
 * [Tensorflow 1.0](https://www.tensorflow.org/)
