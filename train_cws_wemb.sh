@@ -24,6 +24,6 @@ nohup python train_cws.py   --training_path data/datasets/sighan2005-${corpus}/t
                             --pre_trained_word_emb_path data/embeddings/news_tensite.${corpus}.words.w2v50 \
                             --model_root ${model_root} \
                             --word_window 4 \
-                            >${model_root}/stdout.txt 2>${model_root}/stderr.txt &
+                            >>${model_root}/stdout.txt 2>>${model_root}/stderr.txt &
 
 echo "Model and log are saved in ${model_root}."

@@ -1,4 +1,5 @@
 #!coding=utf8
+from __future__ import print_function
 import sys
 import os
 import codecs
@@ -121,9 +122,9 @@ def evaluator(data, output_dir, output_flag):
     ref_file = codecs.open(ref_path, 'w', 'utf8')
     pred_file = codecs.open(pred_path, 'w', 'utf8')
     for l in create_output(seqs, gold_stags):
-        print >> ref_file, l
+        print(l, file=ref_file)
     for i, l in enumerate(create_output(seqs, pred_stags)):
-        print >> pred_file, l
+        print(l, file=pred_file)
     ref_file.close()
     pred_file.close()
 
@@ -169,11 +170,10 @@ if __name__ == '__main__':
     parser.add_argument('--optimizer', dest='optimizer', default='adam_0.001')
     parser.add_argument('--batch_size', dest='batch_size', type=int, default=100)
     parser.add_argument('--eval_batch_size', dest='eval_batch_size', type=int, default=1000)
-    parser.add_argument('--save_freq', dest='save_freq', type=int, default=300)
     parser.add_argument('--max_epoches', dest='max_epoches', type=int, default=100)
 
     args = parser.parse_args()
-    print args
+    print(args)
 
     train_data, dev_data, test_data = (read_segmented_text(args.training_path, word_window=args.word_window),
                                        read_segmented_text(args.dev_path, word_window=args.word_window),
@@ -202,9 +202,8 @@ if __name__ == '__main__':
           optimizer=args.optimizer,
           evaluator=evaluator,
           eval_batch_size=args.eval_batch_size,
+          print_freq=50,
           pre_trained_emb_path=args.pre_trained_emb_path,
           pre_trained_word_emb_path=args.pre_trained_word_emb_path,
-          print_freq=50,
-          save_freq=args.save_freq,
           max_epoches=args.max_epoches)
     sess.close()

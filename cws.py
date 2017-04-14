@@ -1,5 +1,5 @@
+from __future__ import print_function
 import codecs
-import sys
 import time
 from argparse import ArgumentParser
 
@@ -86,9 +86,9 @@ if __name__ == '__main__':
         for seqs, stags in tag(sess, data_iter, args.model_dir):
             for l in create_output(seqs, stags):
                 count += 1
-                print >> fout, l
-            print 'Tagging %d lines in %ds' % (count, time.time() - start)
+                print(l, file=fout)
+            print('Tagging %d lines in %ds' % (count, time.time() - start))
         end = time.time()
 
     fout.close()
-    print >> sys.stderr, 'Finish'
+    print('Finish')

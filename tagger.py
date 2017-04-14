@@ -1,3 +1,4 @@
+from __future__ import print_function
 import tensorflow as tf
 import tensorflow.contrib.layers as layers
 import tensorflow.contrib.crf as crf
@@ -179,7 +180,7 @@ def inference(scores, sequence_lengths=None, transitions=None):
 def train(sess, train_data, dev_data, test_data, model_dir, log_dir, emb_size, word_emb_size, optimizer,
           hidden_layers, channels, kernel_size, active_type, use_bn, use_wn, use_crf, lamd, dropout_emb, 
           dropout_hidden, evaluator, batch_size, eval_batch_size, pre_trained_emb_path=None, 
-          pre_trained_word_emb_path=None, max_epoches=100, print_freq=50, save_freq=50, scope='tagging'):
+          pre_trained_word_emb_path=None, max_epoches=100, print_freq=50, scope='tagging'):
 
     assert len(channels) == hidden_layers
 
@@ -194,7 +195,7 @@ def train(sess, train_data, dev_data, test_data, model_dir, log_dir, emb_size, w
         'mom': tf.train.MomentumOptimizer
     }[optimizer_name](*optimizer_options)
 
-    print("Preparing data ...")
+    print('Preparing data...', end='')
     if not os.path.exists(model_dir):
         os.makedirs(model_dir)
 
@@ -278,9 +279,9 @@ def train(sess, train_data, dev_data, test_data, model_dir, log_dir, emb_size, w
     test_data_ids = data_to_ids(
         test_data, [item2id] + [word2id] * word_window_size + [tag2id]
     )
+    print('Finished.')
 
-    print("Start building the network ...")
-
+    print("Start building the network...", end='')
     seq_ids_pl, seq_other_ids_pls, inputs = build_input_graph(vocab_size=parameters['vocab_size'],
                                                               emb_size=parameters['emb_size'],
                                                               word_window_size=parameters['word_window_size'],
@@ -341,11 +342,29 @@ def train(sess, train_data, dev_data, test_data, model_dir, log_dir, emb_size, w
 
     train_op = optimizer.apply_gradients(grads_and_vars)
 
+    # Variables for recording training procedure
+    best_epoch = tf.get_variable('best_epoch',
+                                 shape=[],
+                                 initializer=tf.zeros_initializer(),
+                                 trainable=False,
+                                 dtype=INT_TYPE)
+    best_dev_score = tf.get_variable('best_dev_score',
+                                     shape=[],
+                                     initializer=tf.zeros_initializer(),
+                                     trainable=False,
+                                     dtype=FLOAT_TYPE)
+    best_test_score = tf.get_variable('best_test_score',
+                                      shape=[],
+                                      initializer=tf.zeros_initializer(),
+                                      trainable=False,
+                                      dtype=FLOAT_TYPE)
+
     init_op = tf.global_variables_initializer()
     saver = tf.train.Saver(tf.global_variables())
     summary_writer = tf.summary.FileWriter(log_dir + '/summaries', sess.graph)
 
-    print("Start training the network ...")
+    print('Finished.')
+    print('Start training the network...')
     sess.run(init_op)
 
     start_time_begin = time.time()
@@ -354,7 +373,7 @@ def train(sess, train_data, dev_data, test_data, model_dir, log_dir, emb_size, w
     try:
         checkpoint = tf.train.latest_checkpoint(model_dir)
         saver.restore(sess, checkpoint)
-        print('Restore model from %s' % checkpoint)
+        print('Restore model from %s.' % checkpoint)
     except (tf.errors.DataLossError, TypeError, Exception):
         # Failed to restore model from disk. Load pre-trained embeddings.
         # Load character embeddings.
@@ -370,7 +389,7 @@ def train(sess, train_data, dev_data, test_data, model_dir, log_dir, emb_size, w
         # Run assign op.
         sess.run(embeddings.assign(value))
         del(pre_trained)
-        print('%d of %d character embeddings were loaded from pre-trained' % (count, len(item2id)))
+        print('%d of %d character embeddings were loaded from pre-trained.' % (count, len(item2id)))
 
         # Load word embeddings.
         with tf.variable_scope(scope, reuse=True):
@@ -385,14 +404,12 @@ def train(sess, train_data, dev_data, test_data, model_dir, log_dir, emb_size, w
         # Run assign op.
         sess.run(word_embeddings.assign(value))
         del(pre_trained_word)
-        print('%d of %d word embeddings were loaded from pre-trained' % (count, len(word2id)))
+        print('%d of %d word embeddings were loaded from pre-trained.' % (count, len(word2id)))
 
-    _, _, best_dev_f1 = evaluator((dev_data[0], dev_data[-1], tag(dev_data_ids[:-1])),
-                                  log_dir + '/dev',
-                                  global_step)
-    summary_writer.add_summary(sess.run(dev_summary_op, {dev_f1_pl: best_dev_f1}), global_step)
+    start_epoch, best_dev_f1 = sess.run((best_epoch, best_dev_score))
 
-    for epoch in range(1, max_epoches + 1):
+    for epoch in range(start_epoch + 1, max_epoches + 1):
+        print('Starting epoch %d...' % epoch)
         start_time = time.time()
         loss_ep = 0
         n_step = 0
@@ -420,31 +437,35 @@ def train(sess, train_data, dev_data, test_data, model_dir, log_dir, emb_size, w
             if global_step % print_freq == 0:
                 print('  Step %d, current cost %.6f, average cost %.6f' % (global_step, loss, loss_ep / n_step))
 
-            # Save model
-            if global_step % save_freq == 0:
-                # Evaluate precision, recall and f1 with an external script.
-                dev_pre, dev_rec, dev_f1 = evaluator((dev_data[0], dev_data[-1], tag(dev_data_ids[:-1])),
-                                                     log_dir + '/dev',
-                                                     global_step)
-                test_pre, test_rec, test_f1 = evaluator((test_data[0], test_data[-1], tag(test_data_ids[:-1])),
-                                                        log_dir + '/test',
-                                                        global_step)
-                summary_writer.add_summary(sess.run(dev_summary_op, {dev_f1_pl: dev_f1}), global_step)
-                summary_writer.add_summary(sess.run(test_summary_op, {test_f1_pl: test_f1}), global_step)
-                print("  Dev   precision / recall / f1 score: %.2f / %.2f / %.2f" %
-                      (dev_pre * 100, dev_rec * 100, dev_f1 * 100))
-                print("  Test  precision / recall / f1 score: %.2f / %.2f / %.2f" %
-                      (test_pre * 100, test_rec * 100, test_f1 * 100))
-                if dev_f1 > best_dev_f1:
-                    best_dev_f1 = dev_f1
-                    path = saver.save(sess, model_dir + '/model', global_step)
-                    print('  New best score on dev')
-                    print('  Save model at %s' % path)
-
         loss_ep = loss_ep / n_step
-        print('Epoch %d finished in %ds, average cost %.6f' % (epoch, time.time() - start_time, loss_ep))
+        print('Epoch %d finished. Time: %ds Cost: %.6f' % (epoch, time.time() - start_time, loss_ep))
 
-    print("Total training time: %fs" % (time.time() - start_time_begin))
+        # Evaluate precision, recall and f1 with an external script.
+        dev_pre, dev_rec, dev_f1 = evaluator((dev_data[0], dev_data[-1], tag(dev_data_ids[:-1])),
+                                             log_dir + '/dev',
+                                             epoch)
+        test_pre, test_rec, test_f1 = evaluator((test_data[0], test_data[-1], tag(test_data_ids[:-1])),
+                                                log_dir + '/test',
+                                                epoch)
+        summary_writer.add_summary(sess.run(dev_summary_op, {dev_f1_pl: dev_f1}), epoch)
+        summary_writer.add_summary(sess.run(test_summary_op, {test_f1_pl: test_f1}), epoch)
+        print("Dev   precision / recall / f1 score: %.2f / %.2f / %.2f" %
+              (dev_pre * 100, dev_rec * 100, dev_f1 * 100))
+        print("Test  precision / recall / f1 score: %.2f / %.2f / %.2f" %
+              (test_pre * 100, test_rec * 100, test_f1 * 100))
+        if dev_f1 > best_dev_f1:
+            best_dev_f1 = dev_f1
+
+            sess.run((tf.assign(best_epoch, epoch),
+                      tf.assign(best_dev_score, dev_f1),
+                      tf.assign(best_test_score, test_f1)))
+
+            path = saver.save(sess, model_dir + '/model', epoch)
+            print('New best score on dev.')
+            print('Save model at %s.' % path)
+
+    print('Finished.')
+    print('Total training time: %fs.' % (time.time() - start_time_begin))
 
 
 def tag(sess, data_iter, model_dir, scope='tagging'):
@@ -464,23 +485,23 @@ def tag(sess, data_iter, model_dir, scope='tagging'):
     parameters_path = os.path.join(model_dir, 'parameters.pkl')
     item2id, id2item, tag2id, id2tag, word2id, id2word = pickle.load(open(mappings_path, 'r'))
     parameters = pickle.load(open(parameters_path))
-    print parameters
-    print 'Building input graph...',
+    print(parameters)
+    print('Building input graph...', end='')
     seq_ids_pl, seq_other_ids_pls, inputs = build_input_graph(vocab_size=parameters['vocab_size'],
                                                               emb_size=parameters['emb_size'],
                                                               word_window_size=parameters['word_window_size'],
                                                               word_vocab_size=parameters['word_vocab_size'],
                                                               word_emb_size=parameters['word_emb_size'],
                                                               scope=scope)
-    print 'Finished.'
-    print 'Building tagging graph...',
+    print('Finished.')
+    print('Building tagging graph...', end='')
     stag_ids_pl, seq_lengths_pl, is_train_pl, cost_op, train_cost_op, scores_op, summary_op = \
         build_tagging_graph(inputs=inputs,
                             num_tags=parameters['num_tags'],
                             use_crf=parameters['use_crf'],
                             lamd=parameters['lamd'],
                             dropout_emb=parameters['dropout_emb'],
-                            dropout_rnn=parameters['dropout_rnn'],
+                            dropout_hidden=parameters['dropout_hidden'],
                             hidden_layers=parameters['hidden_layers'],
                             channels=parameters['channels'],
                             kernel_size=parameters['kernel_size'],
@@ -488,16 +509,16 @@ def tag(sess, data_iter, model_dir, scope='tagging'):
                             use_wn=parameters['use_wn'],
                             active_type=parameters['active_type'],
                             scope=scope)
-    print 'Finished.'
-    print 'Initializing variables...',
+    print('Finished.')
+    print('Initializing variables...', end='')
     init_op = tf.initialize_all_variables()
     sess.run(init_op)
-    print 'Finished.'
-    print 'Reloading parameters...',
+    print('Finished.')
+    print('Reloading parameters...', end='')
     saver = tf.train.Saver(tf.global_variables())
     checkpoint = tf.train.latest_checkpoint(model_dir)
     saver.restore(sess, checkpoint)
-    print 'Finished.'
+    print('Finished.')
 
     tf.get_variable_scope().reuse_variables()
     output = []
@@ -603,10 +624,7 @@ def data_iterator(inputs, batch_size, shuffle=True):
     A simple iterator for generate mini batches.
     """
     assert len(inputs) > 0
-    try:
-        assert all([len(item) == len(inputs[0]) for item in inputs])
-    except AssertionError:
-        print 'Length of inputs are not equal: %s' % [len(item) for item in inputs]
+    assert all([len(item) == len(inputs[0]) for item in inputs])
     inputs = zip(*inputs)
     if shuffle:
         np.random.shuffle(inputs)
@@ -627,4 +645,3 @@ def data_iterator(inputs, batch_size, shuffle=True):
                 bs = max(1, batch_size * MAX_LENGTH / len(d[0]))
     if batch:
         yield zip(*batch)
-
