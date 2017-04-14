@@ -8,9 +8,7 @@ Convolutional neural network for Chinese word segmentation (CWS).
 It is better to use a nvidia GPU to accelerate the training procedure.
 
 ## Data
-Downlaod `data.zip` from <https://drive.google.com/open?id=0B-f0oKMQIe6sQVNxeE9JeUJfQ0k> (It is better to use Google Chrome. I met some problem when open this link with Safari). 
-
-Extract data.zip to this directory. So the file tree would be:
+Downlaod `data.zip` from <https://drive.google.com/open?id=0B-f0oKMQIe6sQVNxeE9JeUJfQ0k>. Extract `data.zip` to this directory. So the file tree would be:
 
 	convseg
 	|	data
