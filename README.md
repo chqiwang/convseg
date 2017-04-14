@@ -4,7 +4,7 @@ Convolutional neural network for Chinese word segmentation (CWS).
 The original paper *Convolutional Neural Network with Word Embeddings for Chinese Word Segmentation* is still under reviewing by EMNLP2017.
 
 ## Dependencies
-* Python 2.7
+* [Python 2.7](https://www.python.org/)
 * [Tensorflow 1.0](https://www.tensorflow.org/)
 
 It is better to use a nvidia GPU to accelerate the training procedure.
@@ -54,3 +54,9 @@ For example, if you want to train the model CONV-SEG on the pku dataset and on g
 	./train_cws.sh pku 0
 	
 More arguments can be set in `train_cws.py`.
+
+## Test Score
+| Model | PKU(dev) | PKU(test) | MSR(dev) | MSR(test) |
+|:------|:---------|:----------|:---------|:----------|
+| CONV-SEG | 96.8 | 95.7 | 97.2 | 97.3	|
+| WE-CONV-SEG | 97.5 |	96.5	| 98.1 |	98.0 |
