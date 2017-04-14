@@ -20,7 +20,7 @@ MAX_LENGTH = 200
 ################################################################################
 #                              GRAPH BUILDING                                  #
 ################################################################################
-def build_input_graph(vocab_size, emb_size, word_vocab_size, word_emb_size, word_window_size, scope=None):
+def build_input_graph(vocab_size, emb_size, word_vocab_size, word_emb_size, word_window_size, scope):
     """
     Gather embeddings from lookup tables.
     """
@@ -39,7 +39,7 @@ def build_input_graph(vocab_size, emb_size, word_vocab_size, word_emb_size, word
 
 
 def build_tagging_graph(inputs, hidden_layers, channels, num_tags, use_crf, lamd, dropout_emb, dropout_hidden, kernel_size,
-                        use_bn, use_wn, active_type, scope=None):
+                        use_bn, use_wn, active_type, scope):
     """
     Build a deep neural model for sequence tagging.
     """
@@ -179,9 +179,11 @@ def inference(scores, sequence_lengths=None, transitions=None):
 
 def train(sess, train_data, dev_data, test_data, model_dir, log_dir, emb_size, word_emb_size, optimizer,
           hidden_layers, channels, kernel_size, active_type, use_bn, use_wn, use_crf, lamd, dropout_emb, 
-          dropout_hidden, evaluator, batch_size, eval_batch_size, pre_trained_emb_path=None, 
-          pre_trained_word_emb_path=None, max_epoches=100, print_freq=50, scope='tagging'):
-
+          dropout_hidden, evaluator, batch_size, eval_batch_size, pre_trained_emb_path, fix_word_emb,
+          pre_trained_word_emb_path, max_epoches, print_freq, scope):
+    """
+    This function is the main function for preparing data and training the model.
+    """
     assert len(channels) == hidden_layers
 
     # Parse optimization method and parameters.
@@ -210,7 +212,7 @@ def train(sess, train_data, dev_data, test_data, model_dir, log_dir, emb_size, w
                 w, e = we[0], np.array(map(float, we[1:]))
                 pre_trained[w] = e
 
-    # Load word embeddings
+    # Load word embeddings.
     pre_trained_word = {}
     if pre_trained_word_emb_path and os.path.isfile(pre_trained_word_emb_path):
         for l in codecs.open(pre_trained_word_emb_path, 'r', 'utf8', 'ignore'):
@@ -336,13 +338,18 @@ def train(sess, train_data, dev_data, test_data, model_dir, log_dir, emb_size, w
     # Clip gradients and apply.
     grads_and_vars = optimizer.compute_gradients(loss=train_cost_op, var_list=tf.trainable_variables())
     grads_and_vars = [(g, v) for g, v in grads_and_vars if g is not None]
+
+    # If use fixed word embeddings, remove the grad
+    if fix_word_emb:
+        grads_and_vars = [(g, v) for g, v in grads_and_vars if '/word_embeddings' not in v.name]
+
     grads_summary_op = tf.summary.histogram('grads', tf.concat([tf.reshape(g, [-1]) for g, _ in grads_and_vars], 0))
     grads_norm = tf.sqrt(sum([tf.reduce_sum(tf.pow(g, 2)) for g, _ in grads_and_vars]))
     grads_and_vars = [(g / (tf.reduce_max([grads_norm, 5]) / 5), v) for g, v in grads_and_vars]
 
     train_op = optimizer.apply_gradients(grads_and_vars)
 
-    # Variables for recording training procedure
+    # Variables for recording training procedure.
     best_epoch = tf.get_variable('best_epoch',
                                  shape=[],
                                  initializer=tf.zeros_initializer(),
@@ -621,7 +628,7 @@ def data_to_ids(data, mappings):
 
 def data_iterator(inputs, batch_size, shuffle=True):
     """
-    A simple iterator for generate mini batches.
+    A simple iterator for generating dynamic mini batches.
     """
     assert len(inputs) > 0
     assert all([len(item) == len(inputs[0]) for item in inputs])
