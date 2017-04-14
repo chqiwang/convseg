@@ -10,7 +10,7 @@ The original paper *Convolutional Neural Network with Word Embeddings for Chines
 It is better to use a nvidia GPU to accelerate the training procedure.
 
 ## Data
-Downlaod `data.zip` from [here](https://drive.google.com/open?id=0B-f0oKMQIe6sQVNxeE9JeUJfQ0k). Extract `data.zip` to this directory. So the file tree would be:
+Downlaod `data.zip` from [here](https://drive.google.com/open?id=0B-f0oKMQIe6sQVNxeE9JeUJfQ0k) (Note that the SIGHAN datasets should only be used for research purposes). Extract `data.zip` to this directory. So the file tree would be:
 
 	convseg
 	|	data
