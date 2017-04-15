@@ -355,6 +355,11 @@ def train(sess, train_data, dev_data, test_data, model_dir, log_dir, emb_size, w
                                  initializer=tf.zeros_initializer(),
                                  trainable=False,
                                  dtype=INT_TYPE)
+    best_step = tf.get_variable('best_step',
+                                 shape=[],
+                                 initializer=tf.zeros_initializer(),
+                                 trainable=False,
+                                 dtype=INT_TYPE)
     best_dev_score = tf.get_variable('best_dev_score',
                                      shape=[],
                                      initializer=tf.zeros_initializer(),
@@ -375,7 +380,6 @@ def train(sess, train_data, dev_data, test_data, model_dir, log_dir, emb_size, w
     sess.run(init_op)
 
     start_time_begin = time.time()
-    global_step = 0
 
     try:
         checkpoint = tf.train.latest_checkpoint(model_dir)
@@ -413,7 +417,7 @@ def train(sess, train_data, dev_data, test_data, model_dir, log_dir, emb_size, w
         del(pre_trained_word)
         print('%d of %d word embeddings were loaded from pre-trained.' % (count, len(word2id)))
 
-    start_epoch, best_dev_f1 = sess.run((best_epoch, best_dev_score))
+    start_epoch, global_step, best_dev_f1 = sess.run((best_epoch, best_step, best_dev_score))
 
     for epoch in range(start_epoch + 1, max_epoches + 1):
         print('Starting epoch %d...' % epoch)
@@ -465,7 +469,8 @@ def train(sess, train_data, dev_data, test_data, model_dir, log_dir, emb_size, w
 
             sess.run((tf.assign(best_epoch, epoch),
                       tf.assign(best_dev_score, dev_f1),
-                      tf.assign(best_test_score, test_f1)))
+                      tf.assign(best_test_score, test_f1),
+                      tf.assign(best_step, global_step)))
 
             path = saver.save(sess, model_dir + '/model', epoch)
             print('New best score on dev.')
