@@ -87,8 +87,8 @@ if __name__ == '__main__':
             for l in create_output(seqs, stags):
                 count += 1
                 print(l, file=fout)
-            print('Tagging %d lines in %ds' % (count, time.time() - start))
+            print('Tagged %d lines in %d seconds.' % (count, time.time() - start))
         end = time.time()
 
     fout.close()
-    print('Finish')
+    print('Finished.')

@@ -480,7 +480,7 @@ def train(sess, train_data, dev_data, test_data, model_dir, log_dir, emb_size, w
     print('Total training time: %fs.' % (time.time() - start_time_begin))
 
 
-def tag(sess, data_iter, model_dir, scope='tagging'):
+def tag(sess, data_iter, model_dir, scope):
     """A tagging function.
 
     Args:
@@ -541,7 +541,6 @@ def tag(sess, data_iter, model_dir, scope='tagging'):
         feed_dict = {seq_ids_pl: seq_ids.astype(INT_TYPE),
                      seq_lengths_pl: seq_lengths.astype(INT_TYPE),
                      is_train_pl: False}
-        assert len(seq_other_ids_pls) == len(seq_other_ids_list)
         for pl, v in zip(seq_other_ids_pls, seq_other_ids_list):
             feed_dict[pl] = v.astype(INT_TYPE)
         scores = sess.run(scores_op, feed_dict)
