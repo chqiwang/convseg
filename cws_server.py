@@ -52,9 +52,9 @@ function loadXMLDoc()
 </head>
 <body>
 <div>
-<textarea id="in" style="height:200px;width:400px;font-size:18px"></textarea>
-<button onclick="loadXMLDoc()">segment</button>
-<textarea id="out" style="height:200px;width:400px;font-size:18px"></textarea>
+<textarea id="in" style="height:400px;width:500px;font-size:18px"></textarea>
+<button onclick="loadXMLDoc()" style="height:25px;width:80px;font-size:18px">分词</button>
+<textarea id="out" style="height:400px;width:500px;font-size:18px"></textarea>
 </div>
 <br>
 <br>
@@ -192,6 +192,8 @@ def make_app(model_dir):
     config.allow_soft_placement = True
     config.log_device_placement = True
     sess = tf.Session(config=config)
+    # Since the namescope of the old models is 'tagging', we use 'tagging' here.
+    # For new models, 'CWS' should be used instead.
     tagger = Tagger(sess=sess, model_dir=model_dir, scope='tagging')
     return tornado.web.Application([
         (r"/", MainHandler),
