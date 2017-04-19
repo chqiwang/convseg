@@ -98,7 +98,7 @@ def create_output(seqs, stags):
         for c, tag in izip(seq, stag):
             new_sen.append(c)
             if tag == 'S' or tag == 'E':
-                new_sen.append(' ')
+                new_sen.append('  ')
         output.append(''.join(new_sen))
     return output
 
