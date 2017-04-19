@@ -142,7 +142,7 @@ class Tagger(object):
         return create_output(*zip(*output))
 
     def preprocess(self, sentences):
-        sentences = sentences.split()
+        sentences = sentences.split('\n')
         data = ([], [], [], [], [], [], [], [], [], [], [], [])
         for l in sentences:
             l = l.strip()
