@@ -192,9 +192,7 @@ def make_app(model_dir):
     config.allow_soft_placement = True
     config.log_device_placement = True
     sess = tf.Session(config=config)
-    # Since the namescope of the old models is 'tagging', we use 'tagging' here.
-    # For new models, 'CWS' should be used instead.
-    tagger = Tagger(sess=sess, model_dir=model_dir, scope='tagging')
+    tagger = Tagger(sess=sess, model_dir=model_dir, scope='CWS')
     return tornado.web.Application([
         (r"/", MainHandler),
         (r"/cws", CWSHandler, {'tagger': tagger})
