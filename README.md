@@ -63,3 +63,6 @@ More arguments can be set in `train_cws.py`.
 |:------|:---------|:----------|:---------|:----------|
 | CONV-SEG | 96.8 | 95.7 | 97.2 | 97.3	|
 | WE-CONV-SEG | 97.5 |	96.5	| 98.1 |	98.0 |
+
+## Demo
+Browse <http://ubuntu23447.cloudapp.net:8888> for a demo.
