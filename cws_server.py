@@ -182,7 +182,7 @@ class CWSHandler(tornado.web.RequestHandler):
     def post(self):
         sentences = self.get_argument('sentences')
         segs = self.tagger.tag(sentences)
-        self.write(quote('\n'.join(segs).encode('utf8')))
+        self.write('\n'.join(segs).encode('utf8'))
 
 
 def make_app(model_dir):
