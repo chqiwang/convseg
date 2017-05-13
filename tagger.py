@@ -180,7 +180,7 @@ def inference(scores, sequence_lengths=None, transitions=None):
 def train(sess, train_data, dev_data, test_data, model_dir, log_dir, emb_size, word_emb_size, optimizer,
           hidden_layers, channels, kernel_size, active_type, use_bn, use_wn, use_crf, lamd, dropout_emb, 
           dropout_hidden, evaluator, batch_size, eval_batch_size, pre_trained_emb_path, fix_word_emb,
-          pre_trained_word_emb_path, max_epoches, print_freq, scope):
+          reserve_all_word_emb, pre_trained_word_emb_path, max_epoches, print_freq, scope):
     """
     This function is the main function for preparing data and training the model.
     """
@@ -239,6 +239,10 @@ def train(sess, train_data, dev_data, test_data, model_dir, log_dir, emb_size, w
         for k in word_dic.keys():
             if k not in pre_trained_word and k != '<UNK>' and k != '<PAD>':
                 word_dic.pop(k)
+        if reserve_all_word_emb:
+            for w in pre_trained_word:
+                if w not in word_dic:
+                    word_dic[w] = 0
         word2id, id2word = create_mapping(word_dic)
         # Save the mappings to disk.
         pickle.dump((item2id, id2item, tag2id, id2tag, word2id, id2word), open(mappings_path, 'w'))

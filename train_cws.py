@@ -167,6 +167,7 @@ if __name__ == '__main__':
     parser.add_argument('--active_type', dest='active_type', default='glu')
     parser.add_argument('--lamd', dest='lamd', type=float, default=0)
     parser.add_argument('--fix_word_emb', dest='fix_word_emb', type=int, default=0)
+    parser.add_argument('--reserve_all_word_emb', dest='reserve_all_word_emb', type=int, default=0)
     parser.add_argument('--use_crf', dest='use_crf', type=int, default=1)
     parser.add_argument('--optimizer', dest='optimizer', default='adam_0.001')
     parser.add_argument('--batch_size', dest='batch_size', type=int, default=100)
@@ -207,6 +208,7 @@ if __name__ == '__main__':
           pre_trained_emb_path=args.pre_trained_emb_path,
           pre_trained_word_emb_path=args.pre_trained_word_emb_path,
           fix_word_emb=args.fix_word_emb,
+          reserve_all_word_emb=args.reserve_all_word_emb,
           max_epoches=args.max_epoches,
           scope='CWS')
     sess.close()
