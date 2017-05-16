@@ -24,18 +24,17 @@ def build_input_graph(vocab_size, emb_size, word_vocab_size, word_emb_size, word
     """
     Gather embeddings from lookup tables.
     """
-    with tf.variable_scope(scope, initializer=tf.uniform_unit_scaling_initializer()):
-        seq_ids = tf.placeholder(dtype=INT_TYPE, shape=[None, None], name='seq_ids')
-        seq_word_ids = [tf.placeholder(dtype=INT_TYPE, shape=[None, None], name='seq_feature_%d_ids' % i)
-                         for i in range(word_window_size)]
-        embeddings = tf.get_variable('embeddings', [vocab_size, emb_size])
-        embedding_output = tf.nn.embedding_lookup([embeddings], seq_ids)
-        word_outputs = []
-        word_embeddings = tf.get_variable('word_embeddings', [word_vocab_size, word_emb_size])
-        for i in range(word_window_size):
-            word_outputs.append(tf.nn.embedding_lookup([word_embeddings], seq_word_ids[i]))
+    seq_ids = tf.placeholder(dtype=INT_TYPE, shape=[None, None], name='seq_ids')
+    seq_word_ids = [tf.placeholder(dtype=INT_TYPE, shape=[None, None], name='seq_feature_%d_ids' % i)
+                     for i in range(word_window_size)]
+    embeddings = tf.get_variable('embeddings', [vocab_size, emb_size])
+    embedding_output = tf.nn.embedding_lookup([embeddings], seq_ids)
+    word_outputs = []
+    word_embeddings = tf.get_variable('word_embeddings', [word_vocab_size, word_emb_size])
+    for i in range(word_window_size):
+        word_outputs.append(tf.nn.embedding_lookup([word_embeddings], seq_word_ids[i]))
 
-        return seq_ids, seq_word_ids, tf.concat([embedding_output] + word_outputs, 2, 'inputs')
+    return seq_ids, seq_word_ids, tf.concat([embedding_output] + word_outputs, 2, 'inputs')
 
 
 def build_tagging_graph(inputs, hidden_layers, channels, num_tags, use_crf, lamd, dropout_emb, dropout_hidden, kernel_size,
@@ -43,109 +42,134 @@ def build_tagging_graph(inputs, hidden_layers, channels, num_tags, use_crf, lamd
     """
     Build a deep neural model for sequence tagging.
     """
-    with tf.variable_scope(scope, initializer=tf.uniform_unit_scaling_initializer()):
-        stag_ids = tf.placeholder(dtype=INT_TYPE, shape=[None, None], name='stag_ids')
-        seq_lengths = tf.placeholder(dtype=INT_TYPE, shape=[None], name='seq_lengths')
+    stag_ids = tf.placeholder(dtype=INT_TYPE, shape=[None, None], name='stag_ids')
+    seq_lengths = tf.placeholder(dtype=INT_TYPE, shape=[None], name='seq_lengths')
 
-        # Default is not train.
-        is_train = tf.placeholder(dtype=tf.bool, shape=[], name='is_train')
+    # Default is not train.
+    is_train = tf.placeholder(dtype=tf.bool, shape=[], name='is_train')
 
-        masks = tf.cast(tf.sequence_mask(seq_lengths), FLOAT_TYPE)
- 
-        # Dropout on embedding output.
-        if dropout_emb:
-            inputs = tf.cond(is_train,
-                             lambda: tf.nn.dropout(inputs, 1 - dropout_emb),
-                             lambda: inputs)
+    masks = tf.cast(tf.sequence_mask(seq_lengths), FLOAT_TYPE)
 
-        hidden_output = inputs
-        pre_channels = inputs.get_shape()[-1].value
-        for i in xrange(hidden_layers):
+    # Dropout on embedding output.
+    if dropout_emb:
+        inputs = tf.cond(is_train,
+                         lambda: tf.nn.dropout(inputs, 1 - dropout_emb),
+                         lambda: inputs)
 
-            k = kernel_size
-            cur_channels = channels[i]
-            filter_w = tf.get_variable('filter_w_%d' % i, shape=[k, pre_channels, cur_channels], dtype=FLOAT_TYPE)
-            filter_v = tf.get_variable('filter_v_%d' % i, shape=[k, pre_channels, cur_channels], dtype=FLOAT_TYPE)
-            bias_b = tf.get_variable('bias_b_%d' % i, shape=[cur_channels],
-                                     initializer=tf.zeros_initializer(dtype=FLOAT_TYPE))
-            bias_c = tf.get_variable('bias_c_%d' % i, shape=[cur_channels],
-                                     initializer=tf.zeros_initializer(dtype=FLOAT_TYPE))
+    hidden_output = inputs
+    pre_channels = inputs.get_shape()[-1].value
+    for i in xrange(hidden_layers):
 
-            # Weight normalization.
-            if use_wn:
-                epsilon = 1e-12
-                g_w = tf.get_variable('g_w_%d' % i, shape=[k, 1, cur_channels], dtype=FLOAT_TYPE)
-                g_v = tf.get_variable('g_v_%d' % i, shape=[k, 1, cur_channels], dtype=FLOAT_TYPE)
-                # Perform wn
-                filter_w = g_w * filter_w / (tf.sqrt(tf.reduce_sum(filter_w ** 2, 1, keep_dims=True)) + epsilon)
-                filter_v = g_v * filter_v / (tf.sqrt(tf.reduce_sum(filter_v ** 2, 1, keep_dims=True)) + epsilon)
+        k = kernel_size
+        cur_channels = channels[i]
+        filter_w = tf.get_variable('filter_w_%d' % i, shape=[k, pre_channels, cur_channels], dtype=FLOAT_TYPE)
+        filter_v = tf.get_variable('filter_v_%d' % i, shape=[k, pre_channels, cur_channels], dtype=FLOAT_TYPE)
+        bias_b = tf.get_variable('bias_b_%d' % i, shape=[cur_channels],
+                                 initializer=tf.zeros_initializer(dtype=FLOAT_TYPE))
+        bias_c = tf.get_variable('bias_c_%d' % i, shape=[cur_channels],
+                                 initializer=tf.zeros_initializer(dtype=FLOAT_TYPE))
 
-            w = tf.nn.conv1d(hidden_output, filter_w, 1, 'SAME') + bias_b
-            v = tf.nn.conv1d(hidden_output, filter_v, 1, 'SAME') + bias_c
+        # Weight normalization.
+        if use_wn:
+            epsilon = 1e-12
+            g_w = tf.get_variable('g_w_%d' % i, shape=[k, 1, cur_channels], dtype=FLOAT_TYPE)
+            g_v = tf.get_variable('g_v_%d' % i, shape=[k, 1, cur_channels], dtype=FLOAT_TYPE)
+            # Perform wn
+            filter_w = g_w * filter_w / (tf.sqrt(tf.reduce_sum(filter_w ** 2, 1, keep_dims=True)) + epsilon)
+            filter_v = g_v * filter_v / (tf.sqrt(tf.reduce_sum(filter_v ** 2, 1, keep_dims=True)) + epsilon)
 
-            if use_bn:
-                w = layers.batch_norm(inputs=v, decay=0.9, is_training=is_train, center=True, scale=True,
-                                      scope='BatchNorm_w_%d' % i)
-                v = layers.batch_norm(inputs=w, decay=0.9, is_training=is_train, center=True, scale=True,
-                                      scope='BatchNorm_v_%d' % i)
+        w = tf.nn.conv1d(hidden_output, filter_w, 1, 'SAME') + bias_b
+        v = tf.nn.conv1d(hidden_output, filter_v, 1, 'SAME') + bias_c
 
-            if active_type == 'glu':
-                hidden_output = w * tf.nn.sigmoid(v)
-            elif active_type == 'relu':
-                hidden_output = tf.nn.relu(w)
-            elif active_type == 'gtu':
-                hidden_output = tf.tanh(w) * tf.nn.sigmoid(v)
-            elif active_type == 'tanh':
-                hidden_output = tf.tanh(w)
-            elif active_type == 'linear':
-                hidden_output = w
-            elif active_type == 'bilinear':
-                hidden_output = w * v
+        if use_bn:
+            w = layers.batch_norm(inputs=v, decay=0.9, is_training=is_train, center=True, scale=True,
+                                  scope='BatchNorm_w_%d' % i)
+            v = layers.batch_norm(inputs=w, decay=0.9, is_training=is_train, center=True, scale=True,
+                                  scope='BatchNorm_v_%d' % i)
 
-            # Dropout on hidden output.
-            if dropout_hidden:
-                hidden_output = tf.cond(is_train,
-                                        lambda: tf.nn.dropout(hidden_output, 1 - dropout_hidden),
-                                        lambda: hidden_output
-                                        )
+        if active_type == 'glu':
+            hidden_output = w * tf.nn.sigmoid(v)
+        elif active_type == 'relu':
+            hidden_output = tf.nn.relu(w)
+        elif active_type == 'gtu':
+            hidden_output = tf.tanh(w) * tf.nn.sigmoid(v)
+        elif active_type == 'tanh':
+            hidden_output = tf.tanh(w)
+        elif active_type == 'linear':
+            hidden_output = w
+        elif active_type == 'bilinear':
+            hidden_output = w * v
 
-            pre_channels = cur_channels
+        # Dropout on hidden output.
+        if dropout_hidden:
+            hidden_output = tf.cond(is_train,
+                                    lambda: tf.nn.dropout(hidden_output, 1 - dropout_hidden),
+                                    lambda: hidden_output
+                                    )
 
-        # Un-scaled log probabilities.
-        scores = layers.fully_connected(hidden_output, num_tags, tf.identity)
+        pre_channels = cur_channels
 
-        if use_crf:
-            cost, transitions = crf.crf_log_likelihood(inputs=scores, tag_indices=stag_ids,
-                                                       sequence_lengths=seq_lengths)
-            cost = - tf.reduce_mean(cost)
-        else:
-            reshaped_scores = tf.reshape(scores, [-1, num_tags])
-            reshaped_stag_ids = tf.reshape(stag_ids, [-1])
-            real_distribution = layers.one_hot_encoding(reshaped_stag_ids, num_tags)
-            cost = tf.nn.softmax_cross_entropy_with_logits(reshaped_scores, real_distribution)
-            cost = tf.reduce_sum(tf.reshape(cost, tf.shape(stag_ids)) * masks) / tf.cast(tf.shape(inputs)[0],
-                                                                                         FLOAT_TYPE)
+    # Un-scaled log probabilities.
+    scores = layers.fully_connected(hidden_output, num_tags, tf.identity)
 
-        # Calculate L2 penalty.
-        l2_penalty = 0
-        if lamd > 0:
-            for v in tf.trainable_variables():
-                if '/B:' not in v.name and '/biases:' not in v.name:
-                    l2_penalty += lamd * tf.nn.l2_loss(v)
-        train_cost = cost + l2_penalty
+    if use_crf:
+        cost, transitions = crf.crf_log_likelihood(inputs=scores, tag_indices=stag_ids,
+                                                   sequence_lengths=seq_lengths)
+        cost = - tf.reduce_mean(cost)
+    else:
+        reshaped_scores = tf.reshape(scores, [-1, num_tags])
+        reshaped_stag_ids = tf.reshape(stag_ids, [-1])
+        real_distribution = layers.one_hot_encoding(reshaped_stag_ids, num_tags)
+        cost = tf.nn.softmax_cross_entropy_with_logits(reshaped_scores, real_distribution)
+        cost = tf.reduce_sum(tf.reshape(cost, tf.shape(stag_ids)) * masks) / tf.cast(tf.shape(inputs)[0],
+                                                                                     FLOAT_TYPE)
 
-        # Summary cost.
-        tf.summary.scalar('cost', cost)
+    # Calculate L2 penalty.
+    l2_penalty = 0
+    if lamd > 0:
+        for v in tf.trainable_variables():
+            if '/B:' not in v.name and '/biases:' not in v.name:
+                l2_penalty += lamd * tf.nn.l2_loss(v)
+    train_cost = cost + l2_penalty
 
-        summaries = tf.summary.merge_all()
+    # Summary cost.
+    tf.summary.scalar('cost', cost)
 
-        update_ops = tf.get_collection(tf.GraphKeys.UPDATE_OPS)
-        if update_ops:
-            updates = tf.group(*update_ops)
-            with tf.control_dependencies([updates]):
-                cost = tf.identity(cost)
+    summaries = tf.summary.merge_all()
 
-        return stag_ids, seq_lengths, is_train, cost, train_cost, scores, summaries
+    update_ops = tf.get_collection(tf.GraphKeys.UPDATE_OPS)
+    if update_ops:
+        updates = tf.group(*update_ops)
+        with tf.control_dependencies([updates]):
+            cost = tf.identity(cost)
+
+    return stag_ids, seq_lengths, is_train, cost, train_cost, scores, summaries
+
+
+def build_graph(parameters, scope):
+    with tf.variable_scope(name_or_scope=scope, initializer=tf.uniform_unit_scaling_initializer()):
+        seq_ids_pl, seq_other_ids_pls, inputs = build_input_graph(vocab_size=parameters['vocab_size'],
+                                                                  emb_size=parameters['emb_size'],
+                                                                  word_window_size=parameters['word_window_size'],
+                                                                  word_vocab_size=parameters['word_vocab_size'],
+                                                                  word_emb_size=parameters['word_emb_size'],
+                                                                  scope=scope)
+        stag_ids_pl, seq_lengths_pl, is_train_pl, cost_op, train_cost_op, scores_op, summary_op = \
+            build_tagging_graph(inputs=inputs,
+                                num_tags=parameters['num_tags'],
+                                use_crf=parameters['use_crf'],
+                                lamd=parameters['lamd'],
+                                dropout_emb=parameters['dropout_emb'],
+                                dropout_hidden=parameters['dropout_hidden'],
+                                hidden_layers=parameters['hidden_layers'],
+                                channels=parameters['channels'],
+                                kernel_size=parameters['kernel_size'],
+                                use_bn=parameters['use_bn'],
+                                use_wn=parameters['use_wn'],
+                                active_type=parameters['active_type'],
+                                scope=scope)
+        return seq_ids_pl, seq_other_ids_pls, stag_ids_pl, seq_lengths_pl, \
+               is_train_pl, cost_op, train_cost_op, scores_op, summary_op
 
 
 def inference(scores, sequence_lengths=None, transitions=None):
@@ -288,26 +312,9 @@ def train(sess, train_data, dev_data, test_data, model_dir, log_dir, emb_size, w
     print('Finished.')
 
     print("Start building the network...", end='')
-    seq_ids_pl, seq_other_ids_pls, inputs = build_input_graph(vocab_size=parameters['vocab_size'],
-                                                              emb_size=parameters['emb_size'],
-                                                              word_window_size=parameters['word_window_size'],
-                                                              word_vocab_size=parameters['word_vocab_size'],
-                                                              word_emb_size=parameters['word_emb_size'],
-                                                              scope=scope)
-    stag_ids_pl, seq_lengths_pl, is_train_pl, cost_op, train_cost_op, scores_op, summary_op = \
-        build_tagging_graph(inputs=inputs,
-                            num_tags=parameters['num_tags'],
-                            use_crf=parameters['use_crf'],
-                            lamd=parameters['lamd'],
-                            dropout_emb=parameters['dropout_emb'],
-                            dropout_hidden=parameters['dropout_hidden'],
-                            hidden_layers=parameters['hidden_layers'],
-                            channels=parameters['channels'],
-                            kernel_size=parameters['kernel_size'],
-                            use_bn=parameters['use_bn'],
-                            use_wn=parameters['use_wn'],
-                            active_type=parameters['active_type'],
-                            scope=scope)
+    seq_ids_pl, seq_other_ids_pls, stag_ids_pl, seq_lengths_pl,\
+    is_train_pl, cost_op, train_cost_op, scores_op, summary_op = build_graph(parameters, scope)
+    print('Finished.')
 
     # An inner tag function for evalution on dev and test data.
     def tag(data):
@@ -503,28 +510,8 @@ def tag(sess, data_iter, model_dir, scope):
     parameters = pickle.load(open(parameters_path))
     print(parameters)
     print('Building input graph...', end='')
-    seq_ids_pl, seq_other_ids_pls, inputs = build_input_graph(vocab_size=parameters['vocab_size'],
-                                                              emb_size=parameters['emb_size'],
-                                                              word_window_size=parameters['word_window_size'],
-                                                              word_vocab_size=parameters['word_vocab_size'],
-                                                              word_emb_size=parameters['word_emb_size'],
-                                                              scope=scope)
-    print('Finished.')
-    print('Building tagging graph...', end='')
-    stag_ids_pl, seq_lengths_pl, is_train_pl, cost_op, train_cost_op, scores_op, summary_op = \
-        build_tagging_graph(inputs=inputs,
-                            num_tags=parameters['num_tags'],
-                            use_crf=parameters['use_crf'],
-                            lamd=parameters['lamd'],
-                            dropout_emb=parameters['dropout_emb'],
-                            dropout_hidden=parameters['dropout_hidden'],
-                            hidden_layers=parameters['hidden_layers'],
-                            channels=parameters['channels'],
-                            kernel_size=parameters['kernel_size'],
-                            use_bn=parameters['use_bn'],
-                            use_wn=parameters['use_wn'],
-                            active_type=parameters['active_type'],
-                            scope=scope)
+    seq_ids_pl, seq_other_ids_pls, stag_ids_pl, seq_lengths_pl,\
+    is_train_pl, cost_op, train_cost_op, scores_op, summary_op = build_graph(parameters, scope)
     print('Finished.')
     print('Initializing variables...', end='')
     init_op = tf.initialize_all_variables()

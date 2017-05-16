@@ -1,6 +1,5 @@
 # -*- coding:utf-8 -* 
 from __future__ import print_function
-from urllib import quote
 import cPickle as pickle
 import os
 from itertools import izip
@@ -9,9 +8,7 @@ import tornado.ioloop
 import tornado.web
 import tensorflow as tf
 
-from tagger import build_input_graph, \
-                   build_tagging_graph, data_to_ids, create_input, inference,\
-                   INT_TYPE
+from tagger import build_graph, data_to_ids, create_input, inference, INT_TYPE
 from cws import create_output
 
 page='''
@@ -73,28 +70,8 @@ class Tagger(object):
         parameters = pickle.load(open(parameters_path))
         print(parameters)
         print('Building input graph...', end='')
-        seq_ids_pl, seq_other_ids_pls, inputs = build_input_graph(vocab_size=parameters['vocab_size'],
-                                                                  emb_size=parameters['emb_size'],
-                                                                  word_window_size=parameters['word_window_size'],
-                                                                  word_vocab_size=parameters['word_vocab_size'],
-                                                                  word_emb_size=parameters['word_emb_size'],
-                                                                  scope=scope)
-        print('Finished.')
-        print('Building tagging graph...', end='')
-        stag_ids_pl, seq_lengths_pl, is_train_pl, cost_op, train_cost_op, scores_op, summary_op = \
-            build_tagging_graph(inputs=inputs,
-                                num_tags=parameters['num_tags'],
-                                use_crf=parameters['use_crf'],
-                                lamd=parameters['lamd'],
-                                dropout_emb=parameters['dropout_emb'],
-                                dropout_hidden=parameters['dropout_hidden'],
-                                hidden_layers=parameters['hidden_layers'],
-                                channels=parameters['channels'],
-                                kernel_size=parameters['kernel_size'],
-                                use_bn=parameters['use_bn'],
-                                use_wn=parameters['use_wn'],
-                                active_type=parameters['active_type'],
-                                scope=scope)
+        seq_ids_pl, seq_other_ids_pls, stag_ids_pl, seq_lengths_pl, \
+        is_train_pl, cost_op, train_cost_op, scores_op, summary_op = build_graph(parameters, scope)
         print('Finished.')
         print('Initializing variables...', end='')
         init_op = tf.initialize_all_variables()

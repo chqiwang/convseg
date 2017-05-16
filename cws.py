@@ -20,8 +20,7 @@ def read_raw_text(path, batch_size, bigram=False, word=True):
         data = ([], )
 
     for i, l in enumerate(codecs.open(path, 'r', 'utf8')):
-        l = l.strip()
-        chars = list(l)
+        chars = list(l.strip())
         data[0].append(chars)
         if bigram:
             chars = ['', ''] + chars + ['', '']
@@ -83,7 +82,7 @@ if __name__ == '__main__':
     with tf.Session(config=config) as sess:
         start = time.time()
         count = 0
-        for seqs, stags in tag(sess, data_iter, args.model_dir):
+        for seqs, stags in tag(sess, data_iter, args.model_dir, 'CWS'):
             for l in create_output(seqs, stags):
                 count += 1
                 print(l, file=fout)
