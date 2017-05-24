@@ -184,11 +184,9 @@ class Model(object):
         Args:
             scores: A numpy array with shape (batch, max_length, num_tags).
             sequence_lengths: A numpy array with shape (batch,).
-            transitions: A numpy array with shape (num_tags, num_tags).
 
         Returns:
             A numpy array with shape (batch, max_length).
-
         """
 
         if not self.parameters['use_crf']:
