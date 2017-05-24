@@ -56,7 +56,7 @@ For example, if you want to train the model CONV-SEG on the pku dataset and on g
 
 	./train_cws.sh pku 0
 	
-More arguments can be set in `train_cws.py`.
+More arguments can be set in `train.py`.
 
 ## Test Score
 | Model | PKU(dev) | PKU(test) | MSR(dev) | MSR(test) |
