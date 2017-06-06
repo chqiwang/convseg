@@ -99,7 +99,9 @@ class Model(object):
                 hidden_output = w
             elif active_type == 'bilinear':
                 hidden_output = w * v
-
+            
+            # Mask paddings.
+            hidden_output = hidden_output * tf.expand_dims(masks, -1)
             # Dropout on hidden output.
             if dropout_hidden:
                 hidden_output = tf.cond(is_train,
