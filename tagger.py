@@ -72,10 +72,8 @@ class Model(object):
             # Weight normalization.
             if use_wn:
                 epsilon = 1e-12
-                g_w = tf.get_variable('g_w_%d' % i, shape=[k, 1, cur_channels], 
-                    initializer=tf.random_normal_initializer(mean=1.0), dtype=FLOAT_TYPE)
-                g_v = tf.get_variable('g_v_%d' % i, shape=[k, 1, cur_channels], 
-                    initializer=tf.random_normal_initializer(mean=1.0), dtype=FLOAT_TYPE)
+                g_w = tf.get_variable('g_w_%d' % i, shape=[k, 1, cur_channels], dtype=FLOAT_TYPE)
+                g_v = tf.get_variable('g_v_%d' % i, shape=[k, 1, cur_channels], dtype=FLOAT_TYPE)
                 # Perform wn
                 filter_w = g_w * filter_w / (tf.sqrt(tf.reduce_sum(filter_w ** 2, 1, keep_dims=True)) + epsilon)
                 filter_v = g_v * filter_v / (tf.sqrt(tf.reduce_sum(filter_v ** 2, 1, keep_dims=True)) + epsilon)
