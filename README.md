@@ -1,9 +1,9 @@
 # CONV-SEG
 Convolutional neural network for Chinese word segmentation (CWS).
-The corresponding paper [**Convolutional Neural Network with Word Embeddings for Chinese Word Segmentation**](https://arxiv.org/pdf/1711.04411.pdf) has been accepted by IJCNLP2017.
+The corresponding paper: [**Convolutional Neural Network with Word Embeddings for Chinese Word Segmentation**](https://arxiv.org/pdf/1711.04411.pdf)
 
 ## Author
-The code is written and maintained by Chunqi Wang. If you have any problem in using this code, please email to <chqiwang@126.com>.
+Chunqi Wang
 
 ## Dependencies
 * [Python 2.7](https://www.python.org/)
