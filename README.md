@@ -12,7 +12,7 @@ Chunqi Wang
 It is better to use a nvidia GPU to accelerate the training procedure.
 
 ## Data
-Downlaod `data.zip` from [here](https://drive.google.com/open?id=0B-f0oKMQIe6sQVNxeE9JeUJfQ0k) (Note that the SIGHAN datasets should only be used for research purposes). Extract `data.zip` to this directory. So the file tree would be:
+Downlaod `data.zip` from [here](https://drive.google.com/file/d/0B-f0oKMQIe6sQVNxeE9JeUJfQ0k/view?usp=sharing&resourcekey=0-pqrbXYjENu6AJxR6mq8zJQ) (Note that the SIGHAN datasets should only be used for research purposes). Extract `data.zip` to this directory. So the file tree would be:
 
 	convseg
 	|	data
